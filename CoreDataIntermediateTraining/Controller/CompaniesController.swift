@@ -7,6 +7,7 @@
 //
 
 import UIKit
+import CoreData
 
 private let tableCellId = "cellId"
 
@@ -21,17 +22,91 @@ class CompaniesController: UITableViewController, CreateCompanyControllerDelegat
         tableView.insertRows(at: [indexPath], with: .automatic)
     }
     
+    func didEditCompany(_ company: Company) {
+        
+        let row = companies.firstIndex(of: company)
+        
+        let indexPath = IndexPath(row: row!, section: 0)
+        
+        tableView.reloadRows(at: [indexPath], with: .middle)
+    }
     
-    var companies = [
-        Company(name: "Apple", founded: Date()),
-        Company(name: "Google", founded: Date()),
-        Company(name: "Facebbok", founded: Date()),
-        Company(name: "Microsoft", founded: Date())
-    ]
+    
+    var companies = [Company]()
+    
+    private func fetchCompanies() {
+ 
+        let context = CoreDataManager.shared.PersistentContainer.viewContext
+        
+        let fetchRequest = NSFetchRequest<Company>.init(entityName: "Company")
+        do {
+            
+             let companies = try context.fetch(fetchRequest)
+            
+//            companies.forEach { (company) in
+//                print(company.name ?? "")
+//            }
+            
+            self.companies = companies
+            
+            self.tableView.reloadData()
+            
+        } catch let fetchErr {
+            print("Error fetching Company data: \(fetchErr)")
+        }
+    }
+    
+    override func tableView(_ tableView: UITableView, editActionsForRowAt indexPath: IndexPath) -> [UITableViewRowAction]? {
+        
+        let deleteAction = UITableViewRowAction(style: .destructive, title: "Delete") { (_, indexPath) in
+            
+            let company = self.companies[indexPath.row]
+//            print("You are deleting:", company.name ?? "")
+            
+            // remove the company from our tableView
+            self.companies.remove(at: indexPath.row)
+            
+            self.tableView.deleteRows(at: [indexPath], with: .automatic)
+            
+            // remove the company from our CoreData
+            let context = CoreDataManager.shared.PersistentContainer.viewContext
+            context.delete(company)
+            do {
+                
+                try context.save()
+                
+            } catch let saveErr {
+                print("Failed to Delete Company name:", saveErr)
+            }
+            
+        }
+        
+        deleteAction.backgroundColor = .lightRed
+        
+        let editAction = UITableViewRowAction(style: .normal, title: "Edit", handler: editHandlerFunction)
+        
+        editAction.backgroundColor = .darkBlue
+        
+        return [deleteAction, editAction]
+    }
+    
+    private func editHandlerFunction(action: UITableViewRowAction, indexPath: IndexPath) {
+        
+        print("Edit Selecting Company...")
+        let editCompanyController = CreateCompanyController()
+        editCompanyController.company = companies[indexPath.row]
+        editCompanyController.delegate = self
+        let navController = CustomNavigationController(rootViewController: editCompanyController)
+        present(navController, animated: true, completion: nil)
+        
+    }
 
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view.
+        
+        fetchCompanies()
+        
         view.backgroundColor = .white
         
         navigationItem.title = "Companies"
@@ -44,7 +119,7 @@ class CompaniesController: UITableViewController, CreateCompanyControllerDelegat
         
     }
     
-    func setupTableViewStyle(_ tableView: UITableView) {
+   private func setupTableViewStyle(_ tableView: UITableView) {
         
         tableView.backgroundColor = UIColor.darkBlue
         
@@ -55,8 +130,7 @@ class CompaniesController: UITableViewController, CreateCompanyControllerDelegat
     }
     
     @objc func handleAddCompany() {
-        print("Adding Company...")
-        
+      
         let createCompanyController = CreateCompanyController()
        
         let navController = CustomNavigationController(rootViewController: createCompanyController)
@@ -84,12 +158,33 @@ class CompaniesController: UITableViewController, CreateCompanyControllerDelegat
         
         let cell = tableView.dequeueReusableCell(withIdentifier: tableCellId, for: indexPath)
         
+        let company = companies[indexPath.row]
+        
+        if let name = company.name, let dateFounded = company.founded {
+            
+//            let locale = Locale(identifier: "EN")
+            
+            let dateFormatter = DateFormatter()
+            
+            dateFormatter.dateFormat = "MMM dd, YYYY"
+            
+            let dateFoundedString = dateFormatter.string(from: dateFounded)
+            
+            let dateString = "\(name) - Founded: \(dateFoundedString)"
+            
+            cell.textLabel?.text = dateString
+        
+        } else {
+            cell.textLabel?.text = company.name
+        }
+        
         setupCellStyle(cell)
-        cell.textLabel?.text = companies[indexPath.row].name
+ 
         return cell
     }
     
-    func setupCellStyle(_ cell: UITableViewCell) {
+    
+   private func setupCellStyle(_ cell: UITableViewCell) {
         
         cell.backgroundColor = UIColor.tealColor
         cell.textLabel?.textColor = .white
