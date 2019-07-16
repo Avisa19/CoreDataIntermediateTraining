@@ -117,6 +117,52 @@ class CompaniesController: UITableViewController, CreateCompanyControllerDelegat
         
         navigationItem.rightBarButtonItem = UIBarButtonItem(image: UIImage(named: "plus")?.withRenderingMode(.alwaysOriginal), style: .plain, target: self, action: #selector(handleAddCompany))
         
+        navigationItem.leftBarButtonItem = UIBarButtonItem(title: "Reset", style: .plain, target: self, action: #selector(handleReset))
+        
+    }
+    
+    @objc private func handleReset() {
+        
+        print("Attempting to delete all coreData object")
+        let context = CoreDataManager.shared.PersistentContainer.viewContext
+        
+//        companies.forEach { (company) in
+//            context.delete(company)
+//        }
+        
+        let batchDeleteRequest = NSBatchDeleteRequest(fetchRequest: Company.fetchRequest())
+        do {
+            
+            try context.execute(batchDeleteRequest)
+//            companies.removeAll()
+//            tableView.reloadData()
+            // because we want to see nice Animation while in deleting
+            var removedIndexPath = [IndexPath]()
+            
+            for (index, _) in companies.enumerated() {
+                let indexPath = IndexPath(row: index, section: 0)
+                removedIndexPath.append(indexPath)
+            }
+            companies.removeAll()
+            tableView.deleteRows(at: removedIndexPath, with: .left)
+            
+        } catch let errDel {
+            print("Error deleting objects:", errDel)
+        }
+    }
+    
+    override func tableView(_ tableView: UITableView, viewForFooterInSection section: Int) -> UIView? {
+        
+        let label = UILabel()
+        label.text = "No companies available..."
+        label.textColor = .white
+        label.textAlignment = .center
+        label.font = UIFont.boldSystemFont(ofSize: 16)
+        return label
+    }
+    
+    override func tableView(_ tableView: UITableView, heightForFooterInSection section: Int) -> CGFloat {
+        return companies.count == 0 ? 150 : 0
     }
     
    private func setupTableViewStyle(_ tableView: UITableView) {
@@ -160,6 +206,13 @@ class CompaniesController: UITableViewController, CreateCompanyControllerDelegat
         
         let company = companies[indexPath.row]
         
+        cell.imageView?.image = UIImage(named: "select_photo_empty")
+        
+        if let imageData = company.imageData {
+            let image = UIImage(data: imageData)
+            cell.imageView?.image = image
+        }
+        
         if let name = company.name, let dateFounded = company.founded {
             
 //            let locale = Locale(identifier: "EN")
@@ -173,6 +226,8 @@ class CompaniesController: UITableViewController, CreateCompanyControllerDelegat
             let dateString = "\(name) - Founded: \(dateFoundedString)"
             
             cell.textLabel?.text = dateString
+            
+        
         
         } else {
             cell.textLabel?.text = company.name

@@ -27,10 +27,13 @@ class CreateCompanyController: UIViewController, UIImagePickerControllerDelegate
  
         didSet {
             nameTextField.text = company?.name
-            guard let date = company?.founded, let imageString = company?.imageView else { return }
+            guard let date = company?.founded else { return }
             datePicker.date = date
             
-            companyImageView.image = UIImage(named: imageString)
+            if let imageData = company?.imageData {
+                companyImageView.image = UIImage(data: imageData)
+            }
+            
         }
     }
     
@@ -41,8 +44,12 @@ class CreateCompanyController: UIViewController, UIImagePickerControllerDelegate
         imageView.isUserInteractionEnabled = true // remember to do this, otherwise your image view by default is not interactive.
         imageView.contentMode = .scaleAspectFill
         imageView.clipsToBounds = true
-        imageView.layer.cornerRadius = 50
+        imageView.layer.cornerRadius = imageView.frame.width / 2
         imageView.layer.masksToBounds = true
+        
+        imageView.layer.borderColor = UIColor.darkBlue.cgColor
+        
+        imageView.layer.borderWidth = 2
         imageView.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(handleSelectPhoto)))
         return imageView
     }()
@@ -73,7 +80,7 @@ class CreateCompanyController: UIViewController, UIImagePickerControllerDelegate
             
         companyImageView.image = originalImage
     }
-    
+            
         dismiss(animated: true, completion: nil)
         
     }
@@ -135,7 +142,10 @@ class CreateCompanyController: UIViewController, UIImagePickerControllerDelegate
         let context = CoreDataManager.shared.PersistentContainer.viewContext
         company?.name = nameTextField.text
         company?.founded = datePicker.date
-        
+        if let companyImage = companyImageView.image {
+            let imageData = companyImage.jpegData(compressionQuality: 0.8)
+            company?.imageData = imageData
+        }
         
         do {
             
@@ -159,8 +169,14 @@ class CreateCompanyController: UIViewController, UIImagePickerControllerDelegate
         let company = NSEntityDescription.insertNewObject(forEntityName: "Company", into: context)
         
         company.setValue(nameTextField.text, forKey: "name")
+        
         company.setValue(datePicker.date, forKey: "founded")
         
+        if let companyImage = companyImageView.image {
+            let imageData = companyImage.jpegData(compressionQuality: 0.8)
+             company.setValue(imageData, forKey: "imageData")
+        }
+       
         // Perform the save
         
         do {
