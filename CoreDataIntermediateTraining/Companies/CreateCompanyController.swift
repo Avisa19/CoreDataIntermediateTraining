@@ -116,8 +116,8 @@ class CreateCompanyController: UIViewController, UIImagePickerControllerDelegate
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        view.backgroundColor = .darkBlue
-        navigationItem.leftBarButtonItem = UIBarButtonItem(title: "Cancel", style: .plain, target: self, action: #selector(handleCancel))
+        setupCancelButton()
+        
         
         navigationItem.rightBarButtonItem = UIBarButtonItem(title: "Save", style: .plain, target: self, action: #selector(handleSave))
         
@@ -197,15 +197,9 @@ class CreateCompanyController: UIViewController, UIImagePickerControllerDelegate
     
     private func setupUI() {
         
+        let lightBlueBackgroundColor = setupLightBlueBackgroundColor(350)
         
-        let lightBlueBackgroundColor = UIView()
-        lightBlueBackgroundColor.backgroundColor = .lightBlue
-        lightBlueBackgroundColor.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(lightBlueBackgroundColor)
-        lightBlueBackgroundColor.topAnchor.constraint(equalTo: view.topAnchor).isActive = true
-        lightBlueBackgroundColor.leftAnchor.constraint(equalTo: view.leftAnchor).isActive = true
-        lightBlueBackgroundColor.rightAnchor.constraint(equalTo: view.rightAnchor).isActive = true
-        lightBlueBackgroundColor.heightAnchor.constraint(equalToConstant: 350).isActive = true
+        view.backgroundColor = UIColor.darkBlue
         
         view.addSubview(companyImageView)
         companyImageView.topAnchor.constraint(equalTo: view.topAnchor, constant: 8).isActive = true
@@ -232,11 +226,6 @@ class CreateCompanyController: UIViewController, UIImagePickerControllerDelegate
         datePicker.rightAnchor.constraint(equalTo: view.rightAnchor).isActive = true
         datePicker.bottomAnchor.constraint(equalTo: lightBlueBackgroundColor.bottomAnchor).isActive = true
         
-        
-        
     }
-    
-    @objc private func handleCancel() {
-        dismiss(animated: true, completion: nil)
-    }
+
 }
